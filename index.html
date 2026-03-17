@@ -1,249 +1,491 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AI科研资讯</title>
-<style>
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  font-family: system-ui, -apple-system, sans-serif;
-}
-body {
-  background: #f4f6f8;
-  padding-top: 50px; /* 缩小顶部导航高度 */
-}
-
-/* 顶部导航（更紧凑） */
-nav {
-  background: #6c757d;
-  color: white;
-  padding: 12px;
-  text-align: center;
-  font-weight: bold;
-  font-size: 18px;
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 90;
-}
-
-/* 下拉刷新 */
-.refresh {
-  position: fixed;
-  top: -40px;
-  left: 0;
-  right: 0;
-  height: 40px;
-  background: #e9ecef;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #666;
-  transition: top 0.3s;
-  z-index: 80;
-  font-size: 14px;
-}
-
-/* 搜索区域（更紧凑） */
-.search {
-  max-width: 700px;
-  margin: 16px auto;
-  padding: 0 16px;
-}
-.search input {
-  width: 100%;
-  padding: 12px 16px;
-  border-radius: 10px;
-  border: 1px solid #ddd;
-  font-size: 15px;
-  outline: none;
-}
-
-/* 新闻列表（充分利用高度） */
-.list {
-  max-width: 700px;
-  margin: 0 auto 40px;
-  padding: 0 16px;
-  min-height: calc(100vh - 200px); /* 保证列表占满剩余高度 */
-}
-.item {
-  background: white;
-  padding: 16px;
-  border-radius: 12px;
-  margin-bottom: 10px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-  cursor: pointer;
-}
-.item h4 {
-  font-size: 16px;
-  margin-bottom: 6px;
-  color: #222;
-  line-height: 1.4;
-}
-.item .time {
-  font-size: 12px;
-  color: #999;
-}
-
-/* 详情页 */
-.detail {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: white;
-  z-index: 100;
-  padding: 70px 20px 40px;
-  overflow-y: auto;
-  display: none;
-}
-.detail .back {
-  position: fixed;
-  top: 56px;
-  left: 16px;
-  background: #6c757d;
-  color: white;
-  border: none;
-  padding: 8px 14px;
-  border-radius: 8px;
-  z-index: 110;
-  font-size: 14px;
-}
-.detail h2 {
-  font-size: 20px;
-  margin-bottom: 16px;
-  line-height: 1.4;
-}
-.detail .info {
-  font-size: 15px;
-  color: #555;
-  line-height: 1.6;
-  margin-bottom: 12px;
-}
-.detail .time {
-  font-size: 13px;
-  color: #999;
-  margin-bottom: 20px;
-}
-.detail .link {
-  display: inline-block;
-  margin-top: 20px;
-  padding: 12px 20px;
-  background: #007bff;
-  color: white;
-  border-radius: 10px;
-  text-decoration: none;
-  font-size: 15px;
-}
-
-.no {
-  text-align: center;
-  color: #999;
-  padding: 40px 20px;
-  display: none;
-}
-</style>
-</head>
-
-<body>
-
-<div class="refresh" id="refresh">下拉刷新</div>
-<nav>AI科研资讯</nav>
-
-<div class="search">
-  <input type="text" id="kw" placeholder="搜索论文..." onkeydown="if(event.key=='Enter')search()">
-</div>
-
-<div class="list" id="listPage">
-  <div id="list"></div>
-  <div class="no" id="no">暂无结果</div>
-</div>
-
-<div class="detail" id="detailPage">
-  <button class="back" onclick="back()">返回</button>
-  <h2 id="dTitle"></h2>
-  <div class="info" id="dDesc"></div>
-  <div class="time" id="dTime"></div>
-  <a id="dUrl" class="link" target="_blank">查看原文</a >
-</div>
-
-<script>
-let all = [], cur = []
-
-window.onload = async () => {
-  await load()
-  pull()
-}
-
-async function load() {
-  const r = document.getElementById("refresh")
-  r.style.top = "0px"
-  r.innerText = "加载中..."
-  try {
-    let res = await fetch(`news.json?t=${Date.now()}`)
-    all = await res.json()
-    cur = [...all]
-    render()
-  } catch(e){
-    document.getElementById("list").innerHTML = `<div class="item"><h4>加载失败</h4></div>`
-  }
-  setTimeout(()=>{
-    document.getElementById("refresh").style.top = "-40px"
-    document.getElementById("refresh").innerText = "下拉刷新"
-  },500)
-}
-
-function render(k=""){
-  let list = document.getElementById("list")
-  let no = document.getElementById("no")
-  if(cur.length===0){no.style.display="block";list.innerHTML="";return}
-  no.style.display="none"
-  list.innerHTML = cur.map((n,i)=>`
-    <div class="item" onclick="open(${i})">
-      <h4>${n.title}</h4>
-      <div class="time">${n.time}</div>
-    </div>
-  `).join("")
-}
-
-function search(){
-  let k = document.getElementById("kw").value.trim()
-  if(!k){cur=[...all];render();return}
-  cur=all.filter(x=>
-    x.title.includes(k)||(x.desc||"").includes(k)
-  )
-  render(k)
-}
-
-function open(i){
-  let d=cur[i]
-  document.getElementById("dTitle").innerText=d.title
-  document.getElementById("dDesc").innerText=d.desc||""
-  document.getElementById("dTime").innerText=d.time||""
-  document.getElementById("dUrl").href=d.url||"#"
-  document.getElementById("listPage").style.display="none"
-  document.getElementById("detailPage").style.display="block"
-}
-
-function back(){
-  document.getElementById("detailPage").style.display="none"
-  document.getElementById("listPage").style.display="block"
-}
-
-function pull(){
-  let s=0
-  document.addEventListener("touchstart",e=>s=e.touches[0].clientY)
-  document.addEventListener("touchend",async e=>{
-    if(window.scrollY===0 && e.changedTouches[0].clientY - s>80){
-      await load()
+  <meta charset="UTF-8">
+  <title>AI资讯搜索 - 每天更新人工智能最新消息</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: "Microsoft YaHei", sans-serif;
     }
-  })
-}
-</script>
+
+    body {
+      background-color: #f5f7fa;
+      padding-top: 60px;
+    }
+
+    /* 顶部导航栏：灰色 */
+    nav {
+      background-color: #6c757d;
+      color: white;
+      padding: 16px;
+      text-align: center;
+      font-size: 20px;
+      font-weight: bold;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+    }
+
+    /* 下拉刷新提示条 */
+    .pull-refresh {
+      position: fixed;
+      top: -50px;
+      left: 0;
+      right: 0;
+      height: 50px;
+      background-color: #e9ecef;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #6c757d;
+      transition: top 0.3s;
+      z-index: 99;
+    }
+    .pull-refresh.refreshing {
+      top: 0;
+    }
+
+    /* 搜索区域：最初布局 */
+    .search-box {
+      max-width: 700px;
+      margin: 50px auto;
+      text-align: center;
+    }
+    .search-box h2 {
+      margin-bottom: 20px;
+      color: #333;
+    }
+    .input-group {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    input {
+      width: 70%;
+      min-width: 200px;
+      padding: 14px 16px;
+      font-size: 16px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      outline: none;
+    }
+    button {
+      padding: 14px 24px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+      color: white;
+    }
+    button.search-btn {
+      background-color: #6c757d;
+    }
+    button.search-btn:hover {
+      background-color: #5a6268;
+    }
+
+    /* 通用列表样式 */
+    .news {
+      max-width: 800px;
+      margin: 0 auto 60px;
+      padding: 0 20px;
+    }
+    .news h3 {
+      font-size: 22px;
+      margin-bottom: 20px;
+      color: #333;
+      border-left: 4px solid #6c757d;
+      padding-left: 10px;
+    }
+    .item {
+      background: white;
+      padding: 16px;
+      margin-bottom: 12px;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      cursor: pointer;
+    }
+    .item h4 {
+      font-size: 18px;
+      color: #6c757d;
+      margin-bottom: 6px;
+    }
+    .item p {
+      color: #666;
+      font-size: 14px;
+    }
+    .item .time {
+      color: #999;
+      font-size: 12px;
+      margin-top: 4px;
+    }
+
+    /* 搜索结果高亮 */
+    .highlight {
+      background-color: #fff3cd;
+      padding: 2px 4px;
+      border-radius: 3px;
+    }
+
+    /* 详情页 / 搜索结果页 通用返回按钮 */
+    .back-btn {
+      position: fixed;
+      top: 65px;
+      left: 20px;
+      background: #6c757d;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 8px;
+      z-index: 210;
+    }
+
+    /* 搜索结果页（独立页面） */
+    .search-page {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: white;
+      z-index: 150;
+      padding: 80px 20px 40px;
+      overflow-y: auto;
+      display: none;
+    }
+    .search-page h3 {
+      margin-bottom: 20px;
+      color: #333;
+      border-left: 4px solid #6c757d;
+      padding-left: 10px;
+    }
+
+    /* 详情页（独立页面） */
+    .detail-page {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: white;
+      z-index: 200;
+      padding: 80px 24px 40px;
+      overflow-y: auto;
+      display: none;
+    }
+    .detail-page h2 {
+      font-size: 20px;
+      margin-bottom: 20px;
+      color: #222;
+    }
+    .detail-page .info {
+      font-size: 14px;
+      color: #666;
+      line-height: 1.7;
+      margin-bottom: 20px;
+    }
+    .detail-page .time {
+      font-size: 12px;
+      color: #999;
+    }
+    .detail-page .link {
+      display: inline-block;
+      margin-top: 20px;
+      padding: 12px 20px;
+      background: #6c757d;
+      color: white;
+      border-radius: 10px;
+      text-decoration: none;
+    }
+
+    .no-result {
+      text-align: center;
+      color: #999;
+      padding: 30px;
+      display: none;
+    }
+
+    /* 底部 */
+    footer {
+      text-align: center;
+      padding: 20px;
+      color: #999;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <!-- 下拉刷新提示 -->
+  <div class="pull-refresh" id="pullRefresh">
+    <span>下拉刷新新闻</span>
+  </div>
+
+  <!-- 导航 -->
+  <nav>AI资讯搜索 · LBridge</nav>
+
+  <!-- 搜索框 -->
+  <div class="search-box">
+    <h2>搜索你想了解的 AI 知识</h2>
+    <div class="input-group">
+      <input type="text" id="keyword" placeholder="请输入人工智能、大模型、AI新闻..." onkeydown="handleKeyDown(event)">
+      <button class="search-btn" onclick="goToSearchPage()">搜索</button>
+    </div>
+  </div>
+
+  <!-- 主列表页 -->
+  <div class="news" id="listPage">
+    <h3>今日AI最新消息</h3>
+    <div id="news-list"></div>
+    <div class="no-result" id="no-result-list" style="display: none;">暂无新闻数据</div>
+  </div>
+
+  <!-- 搜索结果页（独立页面） -->
+  <div class="search-page" id="searchPage">
+    <button class="back-btn" onclick="goBackFromSearch()">返回</button>
+    <h3>搜索结果：<span id="search-keyword"></span></h3>
+    <div id="search-result-list"></div>
+    <div class="no-result" id="no-result-search" style="display: none;">未找到相关结果</div>
+  </div>
+
+  <!-- 详情页（独立页面） -->
+  <div class="detail-page" id="detailPage">
+    <button class="back-btn" onclick="goBackFromDetail()">返回</button>
+    <h2 id="detailTitle"></h2>
+    <div class="info" id="detailDesc"></div>
+    <div class="time" id="detailTime"></div>
+    <a id="detailUrl" class="link" target="_blank">查看原文</a >
+  </div>
+
+  <!-- 底部 -->
+  <footer>© 2026 AI资讯搜索 - 专注人工智能信息</footer>
+
+  <script>
+    let allNews = [];
+    let currentSearchResult = [];
+    let startY = 0, currentY = 0;
+    const pullRefreshEl = document.getElementById('pullRefresh');
+    let isRefreshing = false;
+
+    // 页面加载
+    window.onload = async function() {
+      await fetchNews();
+      bindPullRefresh();
+      history.pushState({ page: 'list' }, '');
+      
+      // 监听手机返回键
+      window.onpopstate = (e) => {
+        const state = e.state;
+        if (!state) return;
+        if (state.page === 'search') {
+          showListPage();
+        } else if (state.page === 'detail') {
+          // 判断是从哪里进入详情的
+          const prevPage = history.state?.prevPage || 'list';
+          if (prevPage === 'search') {
+            showSearchPage();
+          } else {
+            showListPage();
+          }
+        }
+      };
+    };
+
+    // 拉取新闻数据
+    async function fetchNews() {
+      try {
+        pullRefreshEl.querySelector('span').textContent = '正在刷新...';
+        pullRefreshEl.classList.add('refreshing');
+        isRefreshing = true;
+        
+        const response = await fetch('./news.json?t=' + Date.now());
+        allNews = await response.json();
+        renderListPage(allNews);
+        
+        setTimeout(() => {
+          pullRefreshEl.classList.remove('refreshing');
+          pullRefreshEl.querySelector('span').textContent = '下拉刷新新闻';
+          isRefreshing = false;
+        }, 1000);
+      } catch (e) {
+        document.getElementById('news-list').innerHTML = `
+          <div class="item"><h4>暂无新闻数据</h4><p>请先运行爬虫生成 news.json</p ></div>
+        `;
+        setTimeout(() => {
+          pullRefreshEl.classList.remove('refreshing');
+          pullRefreshEl.querySelector('span').textContent = '下拉刷新新闻';
+          isRefreshing = false;
+        }, 1000);
+      }
+    }
+
+    // 渲染主列表页
+    function renderListPage(newsList) {
+      const listEl = document.getElementById('news-list');
+      const noResultEl = document.getElementById('no-result-list');
+      
+      if (newsList.length === 0) {
+        listEl.innerHTML = '';
+        noResultEl.style.display = 'block';
+        return;
+      }
+      noResultEl.style.display = 'none';
+      
+      listEl.innerHTML = newsList.map((news, index) => `
+        <div class="item" onclick="openDetail(${index}, 'list')">
+          <h4>${news.title}</h4>
+          <p>${news.desc || ''}</p >
+          ${news.time ? `<div class="time">发布时间：${news.time}</div>` : ''}
+        </div>
+      `).join('');
+    }
+
+    // 渲染搜索结果页
+    function renderSearchPage(newsList, keyword) {
+      const listEl = document.getElementById('search-result-list');
+      const noResultEl = document.getElementById('no-result-search');
+      const keywordEl = document.getElementById('search-keyword');
+      
+      keywordEl.innerText = keyword;
+      
+      if (newsList.length === 0) {
+        listEl.innerHTML = '';
+        noResultEl.style.display = 'block';
+        return;
+      }
+      noResultEl.style.display = 'none';
+      
+      const reg = new RegExp(`(${keyword})`, 'gi');
+      listEl.innerHTML = newsList.map((news, index) => {
+        let title = news.title.replace(reg, '<span class="highlight">$1</span>');
+        let desc = (news.desc || '').replace(reg, '<span class="highlight">$1</span>');
+        return `
+          <div class="item" onclick="openDetail(${index}, 'search')">
+            <h4>${title}</h4>
+            <p>${desc}</p >
+            ${news.time ? `<div class="time">发布时间：${news.time}</div>` : ''}
+          </div>
+        `;
+      }).join('');
+    }
+
+    // 处理回车键搜索
+    function handleKeyDown(event) {
+      if (event.key === 'Enter') goToSearchPage();
+    }
+
+    // 跳转到搜索结果页
+    function goToSearchPage() {
+      const keyword = document.getElementById('keyword').value.trim();
+      if (!keyword) {
+        alert('请输入搜索内容');
+        return;
+      }
+      
+      currentSearchResult = allNews.filter(news => 
+        news.title.includes(keyword) || (news.desc || '').includes(keyword)
+      );
+      
+      renderSearchPage(currentSearchResult, keyword);
+      document.getElementById('listPage').style.display = 'none';
+      document.getElementById('searchPage').style.display = 'block';
+      
+      // 加入历史记录
+      history.pushState({ page: 'search' }, '');
+    }
+
+    // 从搜索结果页返回
+    function goBackFromSearch() {
+      showListPage();
+      history.back();
+    }
+
+    // 打开详情页（记录来源页面）
+    function openDetail(index, fromPage) {
+      let news;
+      if (fromPage === 'search') {
+        news = currentSearchResult[index];
+      } else {
+        news = allNews[index];
+      }
+      
+      document.getElementById('detailTitle').innerText = news.title;
+      document.getElementById('detailDesc').innerText = news.desc || '暂无简介';
+      document.getElementById('detailTime').innerText = news.time || '';
+      document.getElementById('detailUrl').href = news.url || '#';
+      
+      if (fromPage === 'search') {
+        document.getElementById('searchPage').style.display = 'none';
+      } else {
+        document.getElementById('listPage').style.display = 'none';
+      }
+      document.getElementById('detailPage').style.display = 'block';
+      
+      // 加入历史记录，记录来源
+      history.pushState({ page: 'detail', prevPage: fromPage }, '');
+    }
+
+    // 从详情页返回
+    function goBackFromDetail() {
+      const prevPage = history.state?.prevPage || 'list';
+      if (prevPage === 'search') {
+        showSearchPage();
+      } else {
+        showListPage();
+      }
+      document.getElementById('detailPage').style.display = 'none';
+      history.back();
+    }
+
+    // 显示主列表页
+    function showListPage() {
+      document.getElementById('searchPage').style.display = 'none';
+      document.getElementById('detailPage').style.display = 'none';
+      document.getElementById('listPage').style.display = 'block';
+    }
+
+    // 显示搜索结果页
+    function showSearchPage() {
+      document.getElementById('listPage').style.display = 'none';
+      document.getElementById('detailPage').style.display = 'none';
+      document.getElementById('searchPage').style.display = 'block';
+    }
+
+    // 下拉刷新绑定
+    function bindPullRefresh() {
+      document.addEventListener('touchstart', (e) => {
+        if (isRefreshing) return;
+        startY = e.touches[0].clientY;
+      });
+
+      document.addEventListener('touchmove', (e) => {
+        if (isRefreshing) return;
+        currentY = e.touches[0].clientY;
+        const diff = currentY - startY;
+        if (window.scrollY === 0 && diff > 0) {
+          e.preventDefault();
+          pullRefreshEl.style.top = `${Math.min(diff - 50, 0)}px`;
+          pullRefreshEl.querySelector('span').textContent = diff > 100 ? '松开刷新' : '下拉刷新新闻';
+        }
+      });
+
+      document.addEventListener('touchend', async (e) => {
+        if (isRefreshing) return;
+        const diff = currentY - startY;
+        if (diff > 100 && window.scrollY === 0) {
+          await fetchNews();
+        } else {
+          pullRefreshEl.style.top = '-50px';
+          pullRefreshEl.querySelector('span').textContent = '下拉刷新新闻';
+        }
+      });
+    }
+  </script>
 </body>
 </html>
