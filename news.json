@@ -1,16 +1,8 @@
 [
   {
-    "title": "GPT-5: Multimodal Capabilities",
-    "time": "2025-03-16",
-    "desc": "OpenAI 最新多模态大模型，突破文本与图像理解界限",
-    "url": "https://openai.com/research",
-    "source": "OpenAI"
-  },
-  {
-    "title": "LLaMA-3: Open Foundation Models",
-    "time": "2025-03-15",
-    "desc": "Meta 发布最新大语言模型，支持 8B/70B 参数",
-    "url": "https://ai.meta.com/blog/llama-3/",
-    "source": "Meta AI"
+    "title": "2026多模态大模型最新综述",
+    "time": "2026-03-17",
+    "desc": "arXiv 2026年最新人工智能研究成果",
+    "url": "https://arxiv.org"
   }
 ]
