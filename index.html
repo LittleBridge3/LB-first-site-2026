@@ -100,6 +100,19 @@
       font-size: 14px;
     }
 
+    .item .time {
+      color: #999;
+      font-size: 12px;
+      margin-top: 4px;
+    }
+
+    /* 搜索结果高亮 */
+    .highlight {
+      background-color: #fff3cd;
+      padding: 2px 4px;
+      border-radius: 3px;
+    }
+
     /* 底部 */
     footer {
       text-align: center;
@@ -121,7 +134,7 @@
   <div class="search-box">
     <h2>搜索你想了解的 AI 知识</h2>
     <div class="input-group">
-      <input type="text" id="keyword" placeholder="请输入人工智能、大模型、AI新闻...">
+      <input type="text" id="keyword" placeholder="请输入人工智能、大模型、AI新闻..." onkeydown="handleKeyDown(event)">
       <button onclick="searchAI()">搜索</button>
     </div>
   </div>
@@ -129,7 +142,12 @@
   <!-- 今日AI资讯 -->
   <div class="news">
     <h3>今日AI最新消息</h3>
-    <div id="news-list"><!-- 由JS自动填充新闻 --></div>
+    <div id="news-list">
+      <!-- 这里会被 JS 自动填充 -->
+    </div>
+    <div id="no-result" style="display: none; text-align: center; color: #999; padding: 20px;">
+      未找到相关结果
+    </div>
   </div>
 
   <!-- 底部 -->
@@ -138,51 +156,74 @@
   </footer>
 
   <script>
-    // 搜索功能：跳转到百度，只搜AI相关内容
-    function searchAI() {
-      let word = document.getElementById("keyword").value;
-      if (word.trim() === "") {
-        alert("请输入搜索内容");
+    // 全局保存所有新闻数据
+    let allNews = [];
+
+    // 页面加载时自动获取新闻数据
+    window.onload = async function() {
+      try {
+        const response = await fetch('./news.json');
+        allNews = await response.json();
+        renderNews(allNews);
+      } catch (e) {
+        document.getElementById('news-list').innerHTML = `
+          <div class="item">
+            <h4>暂无新闻数据</h4>
+            <p>请先运行爬虫生成 news.json 或检查网络连接</p >
+          </div>
+        `;
+      }
+    };
+
+    // 渲染新闻列表
+    function renderNews(newsList, keyword = '') {
+      const listEl = document.getElementById('news-list');
+      if (newsList.length === 0) {
+        listEl.innerHTML = '';
+        document.getElementById('no-result').style.display = 'block';
         return;
       }
-      // 自动加上 人工智能 关键词，让结果更精准
-      let url = "https://www.baidu.com/s?wd=人工智能 " + word;
-      window.open(url);
+      document.getElementById('no-result').style.display = 'none';
+      
+      listEl.innerHTML = newsList.map(news => {
+        let title = news.title;
+        let desc = news.desc;
+        // 高亮搜索关键词
+        if (keyword) {
+          const reg = new RegExp(`(${keyword})`, 'gi');
+          title = title.replace(reg, '<span class="highlight">$1</span>');
+          desc = desc.replace(reg, '<span class="highlight">$1</span>');
+        }
+        return `
+          <div class="item">
+            <h4>${title}</h4>
+            <p>${desc}</p >
+            ${news.time ? `<div class="time">发布时间：${news.time}</div>` : ''}
+          </div>
+        `;
+      }).join('');
     }
 
-    // 自动加载爬虫生成的新闻数据
-    window.addEventListener('DOMContentLoaded', function() {
-      fetch('./news.json')
-        .then(res => {
-          if (!res.ok) throw new Error("未找到 news.json 文件，请先运行爬虫");
-          return res.json();
-        })
-        .then(newsData => {
-          const listContainer = document.getElementById('news-list');
-          // 清空原有内容
-          listContainer.innerHTML = "";
-          // 渲染每条新闻
-          newsData.forEach(item => {
-            const newsItem = document.createElement('div');
-            newsItem.className = 'item';
-            newsItem.innerHTML = `
-              <h4>${item.title}</h4>
-              <p>${item.desc}</p >
-            `;
-            listContainer.appendChild(newsItem);
-          });
-        })
-        .catch(err => {
-          console.error("加载新闻失败:", err);
-          // 显示错误提示
-          document.getElementById('news-list').innerHTML = `
-            <div class="item">
-              <h4>⚠️ 暂无新闻数据</h4>
-              <p>${err.message}（运行命令：python get_ai_news.py）</p >
-            </div>
-          `;
-        });
-    });
+    // 处理回车键搜索
+    function handleKeyDown(event) {
+      if (event.key === 'Enter') {
+        searchAI();
+      }
+    }
+
+    // 自定义搜索：在当前页面的新闻里搜索（不跳百度）
+    function searchAI() {
+      const keyword = document.getElementById('keyword').value.trim();
+      if (!keyword) {
+        alert('请输入搜索内容');
+        return;
+      }
+      // 过滤包含关键词的新闻
+      const filtered = allNews.filter(news => 
+        news.title.includes(keyword) || news.desc.includes(keyword)
+      );
+      renderNews(filtered, keyword);
+    }
   </script>
 
 </body>
