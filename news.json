@@ -1,12 +1,16 @@
 [
   {
-    "title": "Visual Language Models for Medical Image Analysis",
-    "desc": "【Papers With Code】2025-03-12 发布 | 医疗影像 SOTA 模型",
-    "time": "2025-03-12"
+    "title": "GPT-5: Multimodal Capabilities",
+    "time": "2025-03-16",
+    "desc": "OpenAI 最新多模态大模型，突破文本与图像理解界限",
+    "url": "https://openai.com/research",
+    "source": "OpenAI"
   },
   {
-    "title": "Large Language Models for Autonomous Driving: A Survey",
-    "desc": "【arXiv cs.AI】2025-03-10 发布 | 自动驾驶大模型综述",
-    "time": "2025-03-10"
+    "title": "LLaMA-3: Open Foundation Models",
+    "time": "2025-03-15",
+    "desc": "Meta 发布最新大语言模型，支持 8B/70B 参数",
+    "url": "https://ai.meta.com/blog/llama-3/",
+    "source": "Meta AI"
   }
 ]
