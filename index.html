@@ -5,64 +5,148 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AI科研资讯</title>
 <style>
-*{margin:0;padding:0;box-sizing:border-box;font-family:system-ui, sans-serif}
-body{background:#f4f6f8;padding-top:60px}
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+body {
+  background: #f4f6f8;
+  padding-top: 50px; /* 缩小顶部导航高度 */
+}
 
-/* 顶部导航 */
-nav{
-  background:#6c757d;
-  color:white;
-  padding:16px;
-  text-align:center;
-  font-weight:bold;
-  position:fixed;top:0;left:0;right:0;z-index:90
+/* 顶部导航（更紧凑） */
+nav {
+  background: #6c757d;
+  color: white;
+  padding: 12px;
+  text-align: center;
+  font-weight: bold;
+  font-size: 18px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 90;
 }
 
 /* 下拉刷新 */
-.refresh{
-  position:fixed;top:-50px;left:0;right:0;height:50px;
-  background:#e9ecef;display:flex;align-items:center;justify-content:center;
-  color:#666;transition:top 0.3s;z-index:80
+.refresh {
+  position: fixed;
+  top: -40px;
+  left: 0;
+  right: 0;
+  height: 40px;
+  background: #e9ecef;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #666;
+  transition: top 0.3s;
+  z-index: 80;
+  font-size: 14px;
 }
 
-/* 搜索 */
-.search{
-  max-width:700px;margin:30px auto 20px;padding:0 16px
+/* 搜索区域（更紧凑） */
+.search {
+  max-width: 700px;
+  margin: 16px auto;
+  padding: 0 16px;
 }
-.search input{
-  width:100%;padding:14px 16px;border-radius:12px;border:1px solid #ddd;
-  font-size:16px;outline:none
+.search input {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 10px;
+  border: 1px solid #ddd;
+  font-size: 15px;
+  outline: none;
 }
 
-/* 新闻列表 */
-.list{max-width:700px;margin:0 auto 60px;padding:0 16px}
-.item{
-  background:white;padding:16px;border-radius:12px;margin-bottom:10px;
-  box-shadow:0 1px 3px rgba(0,0,0,0.05);cursor:pointer
+/* 新闻列表（充分利用高度） */
+.list {
+  max-width: 700px;
+  margin: 0 auto 40px;
+  padding: 0 16px;
+  min-height: calc(100vh - 200px); /* 保证列表占满剩余高度 */
 }
-.item h4{font-size:16px;margin-bottom:6px;color:#222}
-.item .time{font-size:12px;color:#999}
+.item {
+  background: white;
+  padding: 16px;
+  border-radius: 12px;
+  margin-bottom: 10px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  cursor: pointer;
+}
+.item h4 {
+  font-size: 16px;
+  margin-bottom: 6px;
+  color: #222;
+  line-height: 1.4;
+}
+.item .time {
+  font-size: 12px;
+  color: #999;
+}
 
 /* 详情页 */
-.detail{
-  position:fixed;top:0;left:0;right:0;bottom:0;
-  background:white;z-index:100;padding:80px 20px 40px;
-  overflow-y:auto;display:none
+.detail {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: white;
+  z-index: 100;
+  padding: 70px 20px 40px;
+  overflow-y: auto;
+  display: none;
 }
-.detail .back{
-  position:fixed;top:66px;left:16px;
-  background:#6c757d;color:white;border:none;
-  padding:8px 14px;border-radius:8px;z-index:110
+.detail .back {
+  position: fixed;
+  top: 56px;
+  left: 16px;
+  background: #6c757d;
+  color: white;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 8px;
+  z-index: 110;
+  font-size: 14px;
 }
-.detail h2{font-size:20px;margin-bottom:16px}
-.detail .info{font-size:15px;color:#555;line-height:1.6;margin-bottom:12px}
-.detail .time{font-size:13px;color:#999;margin-bottom:20px}
-.detail .link{
-  display:inline-block;margin-top:20px;padding:12px 20px;
-  background:#007bff;color:white;border-radius:10px;text-decoration:none
+.detail h2 {
+  font-size: 20px;
+  margin-bottom: 16px;
+  line-height: 1.4;
+}
+.detail .info {
+  font-size: 15px;
+  color: #555;
+  line-height: 1.6;
+  margin-bottom: 12px;
+}
+.detail .time {
+  font-size: 13px;
+  color: #999;
+  margin-bottom: 20px;
+}
+.detail .link {
+  display: inline-block;
+  margin-top: 20px;
+  padding: 12px 20px;
+  background: #007bff;
+  color: white;
+  border-radius: 10px;
+  text-decoration: none;
+  font-size: 15px;
 }
 
-.no{text-align:center;color:#999;padding:40px;display:none}
+.no {
+  text-align: center;
+  color: #999;
+  padding: 40px 20px;
+  display: none;
+}
 </style>
 </head>
 
@@ -101,13 +185,15 @@ async function load() {
   r.style.top = "0px"
   r.innerText = "加载中..."
   try {
-    let r = await fetch(`news.json?t=${Date.now()}`)
-    all = await r.json()
+    let res = await fetch(`news.json?t=${Date.now()}`)
+    all = await res.json()
     cur = [...all]
     render()
-  } catch(e){}
+  } catch(e){
+    document.getElementById("list").innerHTML = `<div class="item"><h4>加载失败</h4></div>`
+  }
   setTimeout(()=>{
-    document.getElementById("refresh").style.top = "-50px"
+    document.getElementById("refresh").style.top = "-40px"
     document.getElementById("refresh").innerText = "下拉刷新"
   },500)
 }
@@ -153,7 +239,7 @@ function pull(){
   let s=0
   document.addEventListener("touchstart",e=>s=e.touches[0].clientY)
   document.addEventListener("touchend",async e=>{
-    if(window.scrollY===0 && e.changedTouches[0].clientY - s>100){
+    if(window.scrollY===0 && e.changedTouches[0].clientY - s>80){
       await load()
     }
   })
